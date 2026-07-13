@@ -1,4 +1,4 @@
-import { searchYoutube, resolveStream } from "../src/core/ytdlp.ts";
+import { resolveStream, searchYoutube } from "../src/core/ytdlp.ts";
 
 const results = await searchYoutube("blender studio", 3);
 console.log(results);

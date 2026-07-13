@@ -1,9 +1,20 @@
 import { getQuery } from "./cli/args.ts";
-import { searchYoutube } from "./core/ytdlp.ts";
+import { searchYoutube, resolveStream } from "./core/ytdlp.ts";
 import { pickFromList } from "./core/fzf.ts";
+import { playStream } from "./core/mpv.ts";
 
 const query = getQuery();
+if(!query){
+  console.error("usage: mov <search query>");
+  Deno.exit(1);
+}
+console.log(`Searching for "${query}"...`);
 const results = await searchYoutube(query);
+
+if(results.length===0){
+  console.log("No results found.")
+  Deno.exit(0);
+}
 const titles = results.map((r) => r.title);
 const picked = await pickFromList(titles);
 
@@ -12,5 +23,11 @@ if (picked === null) {
   Deno.exit(0);
 }
 
-const chosen = results.find((r) => r.title === picked)!;
-console.log("you picked:", chosen);
+const index = titles.indexOf(picked);
+const chosen = results[index];
+
+console.log(`Resolving stream for "${chosen.title}"...`);
+const stream = await resolveStream(chosen.id);
+
+console.log("Playing in mpv...");
+await playStream(stream, chosen.title);
