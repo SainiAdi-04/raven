@@ -9,6 +9,7 @@ export async function searchYoutube(
 
   const cmd = new Deno.Command("yt-dlp", {
     args: [`ytsearch${limit}:${query}`, "--dump-json", "--flat-playlist"],
+    stdin:"null",
     stdout: "piped",
     stderr: "piped",
   });
@@ -32,8 +33,9 @@ export async function resolveStream(videoId: string): Promise<ResolvedStream> {
 
   const cmd = new Deno.Command("yt-dlp", {
     args: ["-g", url],
+    stdin:"null",
     stdout: "piped",
-    stdin: "piped",
+    stderr: "piped",
   });
 
   const { stdout, stderr, code } = await cmd.output();
