@@ -75,9 +75,7 @@ export async function resolveStream(videoId: string): Promise<ResolvedStream> {
     Boolean,
   );
 
-  if (lines.length === 1) {
-    return { videoUrl: lines[0] };
-  }
-
-  return { videoUrl: lines[0], audioUrl: lines[1] };
+  return lines.length === 1
+    ? { videoUrl: lines[0] }
+    : { videoUrl: lines[0], audioUrl: lines[1] };
 }

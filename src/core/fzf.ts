@@ -14,7 +14,9 @@ export async function pickFromList(items: string[]): Promise<string | null> {
     result = cmd.spawn();
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      throw new Error("fzf is not installed or could not be found in your PATH. Please install fzf and ensure it is available in your PATH. Installation guide: https://github.com/junegunn/fzf#installation");
+      throw new Error(
+        "fzf is not installed or could not be found in your PATH. Please install fzf and ensure it is available in your PATH. Installation guide: https://github.com/junegunn/fzf#installation",
+      );
     }
     throw error;
   }

@@ -7,7 +7,7 @@ export async function playStream(
   const args = [
     stream.videoUrl,
     `--force-media-title=${title ?? "Now playing"}`,
-    "--osd-level=0",
+    "--msg-level=all=warn",
   ];
 
   if (stream.audioUrl) {
@@ -27,7 +27,9 @@ export async function playStream(
     child = cmd.spawn();
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      throw new Error("mpv is not installed or could not be found in your PATH. Please install mpv and ensure it is available in your PATH. Installation guide: https://mpv.io/installation/");
+      throw new Error(
+        "mpv is not installed or could not be found in your PATH. Please install mpv and ensure it is available in your PATH. Installation guide: https://mpv.io/installation/",
+      );
     }
 
     throw error;
