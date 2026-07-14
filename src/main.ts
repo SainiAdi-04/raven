@@ -1,18 +1,18 @@
 import { getQuery } from "./cli/args.ts";
-import { searchYoutube, resolveStream } from "./core/ytdlp.ts";
+import { resolveStream, searchYoutube } from "./core/ytdlp.ts";
 import { pickFromList } from "./core/fzf.ts";
 import { playStream } from "./core/mpv.ts";
 
 const query = getQuery();
-if(!query){
+if (!query) {
   console.error("usage: mov <search query>");
   Deno.exit(1);
 }
 console.log(`Searching for "${query}"...`);
 const results = await searchYoutube(query);
 
-if(results.length===0){
-  console.log("No results found.")
+if (results.length === 0) {
+  console.log("No results found.");
   Deno.exit(0);
 }
 const titles = results.map((r) => r.title);

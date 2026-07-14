@@ -1,8 +1,12 @@
 import type { ResolvedStream } from "./types.ts";
 
-export async function playStream(stream: ResolvedStream, title?: string): Promise<void> {
-  const args = [stream.videoUrl,
-        `--force-media-title=${title ?? "Now playing"}`,
+export async function playStream(
+  stream: ResolvedStream,
+  title?: string,
+): Promise<void> {
+  const args = [
+    stream.videoUrl,
+    `--force-media-title=${title ?? "Now playing"}`,
     "--osd-level=0",
   ];
 
