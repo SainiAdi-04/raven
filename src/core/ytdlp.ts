@@ -15,7 +15,19 @@ export async function searchYoutube(
     stderr: "piped",
   });
 
-  const { stdout, stderr, code } = await cmd.output();
+  let result;
+  try {
+    result = await cmd.output();
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      throw new Error(
+        "yt-dlp not installed — see: https://github.com/yt-dlp/yt-dlp#installation",
+      );
+    }
+    throw error;
+  }
+
+  const { stdout, stderr, code } = result;
 
   if (code !== 0) {
     throw formatYtDlpError(new TextDecoder().decode(stderr), "search");
@@ -42,7 +54,19 @@ export async function resolveStream(videoId: string): Promise<ResolvedStream> {
     stderr: "piped",
   });
 
-  const { stdout, stderr, code } = await cmd.output();
+  let result;
+  try {
+    result = await cmd.output();
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      throw new Error(
+        "yt-dlp not installed — see: https://github.com/yt-dlp/yt-dlp#installation and add it to your path.",
+      );
+    }
+    throw error;
+  }
+
+  const { stdout, stderr, code } = result;
   if (code !== 0) {
     throw formatYtDlpError(new TextDecoder().decode(stderr), "resolve");
   }

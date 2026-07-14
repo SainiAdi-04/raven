@@ -27,7 +27,7 @@ export async function playStream(
     child = cmd.spawn();
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      throw new Error("mpv not installed");
+      throw new Error("mpv is not installed or could not be found in your PATH. Please install mpv and ensure it is available in your PATH. Installation guide: https://mpv.io/installation/");
     }
 
     throw error;
