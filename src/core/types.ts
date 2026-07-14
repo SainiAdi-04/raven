@@ -1,6 +1,6 @@
 export interface SearchResult {
-  id: String;
-  title: String;
+  id: string;
+  title: string;
 }
 
 export interface ResolvedStream {
