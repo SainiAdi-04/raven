@@ -32,7 +32,12 @@ export async function resolveStream(videoId: string): Promise<ResolvedStream> {
   const url = `https://youtube.com/watch?v=${videoId}`;
 
   const cmd = new Deno.Command("yt-dlp", {
-    args: ["-f","bestvideo[vcodec^=avc1]+bestaudio/best[vcodec^=avc1]","-g", url],
+    args: [
+      "-f",
+      "bestvideo+bestaudio/best",
+      "-g",
+      url,
+    ],
     stdin: "null",
     stdout: "piped",
     stderr: "piped",
