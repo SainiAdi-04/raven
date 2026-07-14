@@ -21,7 +21,18 @@ export async function playStream(
     stderr: "inherit",
   });
 
-  const child = cmd.spawn();
+  let child: Deno.ChildProcess;
+
+  try {
+    child = cmd.spawn();
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      throw new Error("mpv not installed");
+    }
+
+    throw error;
+  }
+
   const status = await child.status;
 
   if (!status.success) {

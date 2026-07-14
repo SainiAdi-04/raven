@@ -1,4 +1,5 @@
 import type { ResolvedStream, SearchResult } from "./types.ts";
+import { formatYtDlpError } from "./error.ts";
 
 export async function searchYoutube(
   query: string,
@@ -17,9 +18,7 @@ export async function searchYoutube(
   const { stdout, stderr, code } = await cmd.output();
 
   if (code !== 0) {
-    throw new Error(
-      `yt-dlp search failed: ${new TextDecoder().decode(stderr)}`,
-    );
+    throw formatYtDlpError(new TextDecoder().decode(stderr), "search");
   }
 
   const text = new TextDecoder().decode(stdout);
@@ -45,9 +44,7 @@ export async function resolveStream(videoId: string): Promise<ResolvedStream> {
 
   const { stdout, stderr, code } = await cmd.output();
   if (code !== 0) {
-    throw new Error(
-      `yt-dlp resolve failed: ${new TextDecoder().decode(stderr)}`,
-    );
+    throw formatYtDlpError(new TextDecoder().decode(stderr), "resolve");
   }
 
   const lines = new TextDecoder().decode(stdout).trim().split("\n").filter(

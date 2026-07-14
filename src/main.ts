@@ -35,6 +35,6 @@ try {
   console.log("Playing in mpv...");
   await playStream(stream, chosen.title);
 } catch (error) {
-  console.error(error);
+  console.error(error instanceof Error ? error.message : String(error));
   Deno.exit(1);
 }
