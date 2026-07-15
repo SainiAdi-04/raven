@@ -3,6 +3,20 @@ import { resolveStream, searchYoutube } from "./core/ytdlp.ts";
 import { pickFromList } from "./core/fzf.ts";
 import { playStream } from "./core/mpv.ts";
 
+function formatDuration(seconds?: number): string {
+  if (!seconds) return "unknown length";
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
+function formatViews(count?: number): string {
+  if (!count) return "";
+  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M views`;
+  if (count >= 1_000) return `${(count / 1_000).toFixed(0)}K views`;
+  return `${count} views`;
+}
+
 try {
   const query = getQuery();
   if (!query) {
@@ -18,16 +32,24 @@ try {
     Deno.exit(0);
   }
 
-  const titles = results.map((r) => r.title);
-  const picked = await pickFromList(titles);
+  const pickItems = results.map((r) => ({
+    display: r.title,
+    preview: [
+      r.title,
+      "",
+      r.uploader ?? "unknown uploader",
+      `${formatDuration(r.duration)}  ${formatViews(r.views)}`,
+    ].join("\n"),
+  }));
 
-  if (picked === null) {
-    console.log("cancelled");
+  const pickedIndex = await pickFromList(pickItems);
+
+  if (pickedIndex === null) {
+    console.log("Cancelled.");
     Deno.exit(0);
   }
 
-  const index = titles.indexOf(picked);
-  const chosen = results[index];
+  const chosen = results[pickedIndex];
 
   console.log(`Resolving stream for "${chosen.title}"...`);
   const stream = await resolveStream(chosen.id);

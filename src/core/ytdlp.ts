@@ -5,9 +5,6 @@ export async function searchYoutube(
   query: string,
   limit = 5,
 ): Promise<SearchResult[]> {
-  // Deno.Command("yt-dlp", { args: [`ytsearch${limit}:${query}`, "--dump-json", "--flat-playlist"], stdout: "piped" })
-  // decode stdout, split lines, JSON.parse each, map to {id, title}
-
   const cmd = new Deno.Command("yt-dlp", {
     args: [`ytsearch${limit}:${query}`, "--dump-json", "--flat-playlist"],
     stdin: "null",
@@ -36,7 +33,13 @@ export async function searchYoutube(
   const text = new TextDecoder().decode(stdout);
 
   return text.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line))
-    .map((obj) => ({ id: obj.id, title: obj.title }));
+    .map((obj): SearchResult => ({
+      id: obj.id,
+      title: obj.title,
+      uploader: obj.uploader ?? obj.channel,
+      duration: obj.duration,
+      views: obj.view_count,
+    }));
 }
 
 export async function resolveStream(videoId: string): Promise<ResolvedStream> {
