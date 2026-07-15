@@ -2,6 +2,14 @@ import { getQuery } from "./cli/args.ts";
 import { resolveStream, searchYoutube } from "./core/ytdlp.ts";
 import { pickFromList } from "./core/fzf.ts";
 import { playStream } from "./core/mpv.ts";
+import { runMaester } from "./core/maester.ts";
+
+const args = Deno.args;
+
+if (args.length > 0 && args[0] === "maester") {
+  await runMaester();
+  Deno.exit(0);
+}
 
 function formatDuration(seconds?: number): string {
   if (!seconds) return "unknown length";
