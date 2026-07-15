@@ -48,7 +48,7 @@ export async function resolveStream(videoId: string): Promise<ResolvedStream> {
   const cmd = new Deno.Command("yt-dlp", {
     args: [
       "-f",
-      "bestvideo+bestaudio/best",
+      "bestvideo[vcodec^=avc1]+bestaudio\/bestvideo[vcodec^=vp9]+bestaudio\/bestvideo[vcodec^=av01]+bestaudio\/best",
       "-g",
       url,
     ],
