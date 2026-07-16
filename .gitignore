@@ -1,0 +1,27 @@
+# Deno local cache directory (if using project-local DENO_DIR)
+.deno/
+
+# Deno test coverage reports
+coverage/
+*.lcov
+
+# Environment variables and secrets
+.env
+.env.local
+
+# Node/npm compatibility artifacts (if using npm packages or node_modules)
+node_modules/
+npm-debug.log*
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Operating system files
+.DS_Store
+Thumbs.db
