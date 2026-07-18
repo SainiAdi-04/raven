@@ -5,7 +5,7 @@
 Raven is a terminal-native YouTube client. You send it a query, it fetches exactly that — no ads, no autoplay, no recommended sidebar, no algorithm deciding what you watch next. You ask, it answers. That's the whole deal.
 
 ```
-raven inception trailer
+raven Odyssey trailer
 ```
 
 That's it. That's the interface.
@@ -143,4 +143,4 @@ This is an early, actively-evolving project. Issues and ideas are welcome — op
 
 ## 📜 License
 
-<!-- Add your chosen license here, e.g. MIT -->
+This project is licensed under the [MIT License](LICENSE).
