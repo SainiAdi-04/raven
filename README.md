@@ -121,6 +121,19 @@ raven <search query>
 - Pick one, and it resolves and plays instantly in `mpv`.
 - Press `q` in `mpv` to stop playback.
 
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `-h, --help` | Show help message and exit |
+| `-v, --version` | Show version number and exit |
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `maester` | Check that yt-dlp, fzf, and mpv are installed |
+
 ---
 
 ## 🏰 Beyond the Wall (roadmap)
