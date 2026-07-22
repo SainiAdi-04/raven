@@ -1,10 +1,20 @@
-import { getQuery } from "./cli/args.ts";
+import { getQuery, VERSION, HELP_TEXT } from "./cli/args.ts";
 import { resolveStream, searchYoutube } from "./core/ytdlp.ts";
 import { pickFromList } from "./core/fzf.ts";
 import { playStream } from "./core/mpv.ts";
 import { runMaester } from "./core/maester.ts";
 
 const args = Deno.args;
+
+if (args.includes("--help") || args.includes("-h")) {
+  console.log(HELP_TEXT);
+  Deno.exit(0);
+}
+
+if (args.includes("--version") || args.includes("-v")) {
+  console.log(VERSION);
+  Deno.exit(0);
+}
 
 if (args.length > 0 && args[0] === "maester") {
   await runMaester();
@@ -28,7 +38,7 @@ function formatViews(count?: number): string {
 try {
   const query = getQuery();
   if (!query) {
-    console.error("usage: mov <search query>");
+    console.error("usage: raven <search query>");
     Deno.exit(1);
   }
 
