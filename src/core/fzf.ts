@@ -6,7 +6,7 @@ export async function pickFromList(items: PickItem[]): Promise<number | null> {
   const lines: string[] = [];
 
   if (hasPreview) {
-    tempDir = await Deno.makeTempDir({ prefix: "mov-preview-" });
+    tempDir = await Deno.makeTempDir({ prefix: "raven-preview-" });
     for (let i = 0; i < items.length; i++) {
       const filePath = `${tempDir}/${i}.txt`;
       await Deno.writeTextFile(filePath, items[i].preview ?? "");
