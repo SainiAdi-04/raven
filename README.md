@@ -69,14 +69,15 @@ sudo pacman -S yt-dlp fzf mpv
 Grab the latest release for your platform from the [Releases page](../../releases):
 
 ```bash
+# Linux
+curl -L https://github.com/SainiAdi-04/raven/releases/latest/download/raven-linux -o raven
+
 # macOS (Apple Silicon)
 curl -L https://github.com/SainiAdi-04/raven/releases/latest/download/raven-macos-arm -o raven
 
 # macOS (Intel)
 curl -L https://github.com/SainiAdi-04/raven/releases/latest/download/raven-macos-intel -o raven
 
-# Linux
-curl -L https://github.com/SainiAdi-04/raven/releases/latest/download/raven-linux -o raven
 ```
 
 ### 3. Make it executable and add it to your path
