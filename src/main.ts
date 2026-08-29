@@ -24,6 +24,12 @@ if (args.length > 0 && args[0] === "maester") {
 function formatDuration(seconds?: number): string {
   if (!seconds) return "unknown length";
   const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  if (hours > 0) {
+    const remainingMinutes = minutes % 60;
+    const remainingSeconds = seconds % 60;
+    return `${hours}:${remainingMinutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+  }
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
@@ -57,6 +63,7 @@ try {
       "",
       r.uploader ?? "unknown uploader",
       `${formatDuration(r.duration)}  ${formatViews(r.views)}`,
+      r.date ? `Released on: ${r.date}` : "",
     ].join("\n"),
   }));
 
@@ -70,7 +77,7 @@ try {
   const chosen = results[pickedIndex];
 
   console.log(`Resolving stream for "${chosen.title}"...`);
-  const stream = await resolveStream(chosen.id);
+  const stream = resolveStream(chosen.id);
 
   console.log("Playing in mpv...");
   await playStream(stream, chosen.title);

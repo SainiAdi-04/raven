@@ -1,3 +1,12 @@
+# Compiled binaries
+raven
+raven-linux
+raven-macos-arm
+raven-macos-intel
+
+# Test reports
+test_report.md
+
 # Deno local cache directory (if using project-local DENO_DIR)
 .deno/
 

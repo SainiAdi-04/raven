@@ -6,7 +6,7 @@ export async function searchYoutube(
   limit = 5,
 ): Promise<SearchResult[]> {
   const cmd = new Deno.Command("yt-dlp", {
-    args: [`ytsearch${limit}:${query}`, "--dump-json", "--flat-playlist"],
+    args: [`ytsearch${limit}:${query}`, "--dump-json", ], //"--flat-playlist"
     stdin: "null",
     stdout: "piped",
     stderr: "piped",
@@ -39,46 +39,10 @@ export async function searchYoutube(
       uploader: obj.uploader ?? obj.channel,
       duration: obj.duration,
       views: obj.view_count,
+      date: obj.upload_date ? `${obj.upload_date.slice(6, 8)}-${obj.upload_date.slice(4, 6)}-${obj.upload_date.slice(0, 4)}` : undefined,
     }));
 }
 
-export async function resolveStream(videoId: string): Promise<ResolvedStream> {
-  const url = `https://youtube.com/watch?v=${videoId}`;
-
-  const cmd = new Deno.Command("yt-dlp", {
-    args: [
-      "-f",
-      "bestvideo[vcodec^=avc1]+bestaudio\/bestvideo[vcodec^=vp9]+bestaudio\/bestvideo[vcodec^=av01]+bestaudio\/best",
-      "-g",
-      url,
-    ],
-    stdin: "null",
-    stdout: "piped",
-    stderr: "piped",
-  });
-
-  let result;
-  try {
-    result = await cmd.output();
-  } catch (error) {
-    if (error instanceof Deno.errors.NotFound) {
-      throw new Error(
-        "yt-dlp not installed — see: https://github.com/yt-dlp/yt-dlp#installation and add it to your path.",
-      );
-    }
-    throw error;
-  }
-
-  const { stdout, stderr, code } = result;
-  if (code !== 0) {
-    throw formatYtDlpError(new TextDecoder().decode(stderr), "resolve");
-  }
-
-  const lines = new TextDecoder().decode(stdout).trim().split("\n").filter(
-    Boolean,
-  );
-
-  return lines.length === 1
-    ? { videoUrl: lines[0] }
-    : { videoUrl: lines[0], audioUrl: lines[1] };
+export function resolveStream(videoId: string): ResolvedStream {
+  return { videoUrl: `https://youtube.com/watch?v=${videoId}` };
 }

@@ -4,6 +4,7 @@ export interface SearchResult {
   uploader?: string;
   duration?: number;
   views?: number;
+  date?: string;
 }
 
 export interface ResolvedStream {

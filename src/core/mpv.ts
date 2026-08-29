@@ -8,11 +8,8 @@ export async function playStream(
     stream.videoUrl,
     `--force-media-title=${title ?? "Now playing"}`,
     "--msg-level=all=warn",
+    "--ytdl-format=bestvideo[vcodec^=avc1]+bestaudio/bestvideo+bestaudio/best",
   ];
-
-  if (stream.audioUrl) {
-    args.push(`--audio-file=${stream.audioUrl}`);
-  }
 
   const cmd = new Deno.Command("mpv", {
     args,
