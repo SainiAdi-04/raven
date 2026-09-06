@@ -4,7 +4,7 @@ import type { PlaybackMode } from "../core/types.ts";
 export const VERSION = "raven v0.1.0";
 
 export const HELP_TEXT = [
-  "Raven — A terminal-native YouTube client",
+  "Raven — A terminal-native YouTube client with sub-second hybrid search",
   "",
   "USAGE:",
   "  raven [options] <search query | direct target>",
