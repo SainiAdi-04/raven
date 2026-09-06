@@ -186,3 +186,123 @@ Deno.test("runRaven - handles runtime exceptions gracefully with exit 1", async 
   assertEquals(code, 1);
   assertStringIncludes(stderr, "Network connection dropped");
 });
+
+// ─── Direct Target URL Interception ──────────────────────────────────────────
+
+Deno.test("runRaven - direct target watch URL bypasses search and picker, dispatching to player", async () => {
+  let searchCalled = false;
+  let pickCalled = false;
+  let playedStream: ResolvedStream | null = null;
+
+  const { stdout, code } = await runTestRaven(
+    ["https://www.youtube.com/watch?v=dQw4w9WgXcQ"],
+    {
+      search: () => {
+        searchCalled = true;
+        throw new Error("search should not be called for direct target");
+      },
+      pick: () => {
+        pickCalled = true;
+        throw new Error("pick should not be called for direct target");
+      },
+      play: (stream: ResolvedStream) => {
+        playedStream = stream;
+        return Promise.resolve();
+      },
+    },
+  );
+
+  assertEquals(code, 0);
+  assertEquals(searchCalled, false);
+  assertEquals(pickCalled, false);
+  assertEquals((playedStream as ResolvedStream | null)?.videoUrl, "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  assertStringIncludes(stdout, "Playing in mpv...");
+  assertEquals(stdout.includes("Searching for"), false);
+});
+
+Deno.test("runRaven - direct target short URL (youtu.be) dispatches with normalized URL", async () => {
+  let playedStream: ResolvedStream | null = null;
+
+  const { stdout, code } = await runTestRaven(["youtu.be/dQw4w9WgXcQ"], {
+    search: () => {
+      throw new Error("search should not be called");
+    },
+    pick: () => {
+      throw new Error("pick should not be called");
+    },
+    play: (stream: ResolvedStream) => {
+      playedStream = stream;
+      return Promise.resolve();
+    },
+  });
+
+  assertEquals(code, 0);
+  assertEquals((playedStream as ResolvedStream | null)?.videoUrl, "https://youtu.be/dQw4w9WgXcQ");
+  assertStringIncludes(stdout, "Playing in mpv...");
+});
+
+Deno.test("runRaven - direct target shorts URL dispatches directly to player", async () => {
+  let playedStream: ResolvedStream | null = null;
+
+  const { stdout, code } = await runTestRaven(
+    ["https://youtube.com/shorts/dQw4w9WgXcQ"],
+    {
+      search: () => {
+        throw new Error("search should not be called");
+      },
+      pick: () => {
+        throw new Error("pick should not be called");
+      },
+      play: (stream: ResolvedStream) => {
+        playedStream = stream;
+        return Promise.resolve();
+      },
+    },
+  );
+
+  assertEquals(code, 0);
+  assertEquals((playedStream as ResolvedStream | null)?.videoUrl, "https://youtube.com/shorts/dQw4w9WgXcQ");
+  assertStringIncludes(stdout, "Playing in mpv...");
+});
+
+Deno.test("runRaven - direct target mobile URL dispatches with normalized URL", async () => {
+  let playedStream: ResolvedStream | null = null;
+
+  const { stdout, code } = await runTestRaven(
+    ["m.youtube.com/watch?v=dQw4w9WgXcQ"],
+    {
+      search: () => {
+        throw new Error("search should not be called");
+      },
+      pick: () => {
+        throw new Error("pick should not be called");
+      },
+      play: (stream: ResolvedStream) => {
+        playedStream = stream;
+        return Promise.resolve();
+      },
+    },
+  );
+
+  assertEquals(code, 0);
+  assertEquals((playedStream as ResolvedStream | null)?.videoUrl, "https://m.youtube.com/watch?v=dQw4w9WgXcQ");
+  assertStringIncludes(stdout, "Playing in mpv...");
+});
+
+Deno.test("runRaven - non-URL string queries continue through search and picker", async () => {
+  let searchReceivedQuery = "";
+  const mockResults: SearchResult[] = [{ id: "abc", title: "Test Result" }];
+
+  const { stdout, code } = await runTestRaven(["never gonna give you up"], {
+    search: (query: string) => {
+      searchReceivedQuery = query;
+      return Promise.resolve(mockResults);
+    },
+    pick: () => Promise.resolve(0),
+    play: () => Promise.resolve(),
+  });
+
+  assertEquals(code, 0);
+  assertEquals(searchReceivedQuery, "never gonna give you up");
+  assertStringIncludes(stdout, 'Searching for "never gonna give you up"...');
+});
