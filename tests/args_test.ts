@@ -2,7 +2,7 @@ import {
   assertEquals,
   assertStringIncludes,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { HELP_TEXT, VERSION, getQuery } from "../src/cli/args.ts";
+import { HELP_TEXT, VERSION, getQuery, getPlaybackMode } from "../src/cli/args.ts";
 
 // ─── VERSION ─────────────────────────────────────────────────────────────────
 
@@ -84,3 +84,36 @@ Deno.test("getQuery - excludes -v flag from query", () => {
 Deno.test("getQuery - numeric args are included in query", () => {
   assertEquals(getQuery(["video", "123"]), "video 123");
 });
+
+Deno.test("getQuery - excludes -a flag from query", () => {
+  assertEquals(getQuery(["-a", "lofi", "beats"]), "lofi beats");
+  assertEquals(getQuery(["lofi", "-a", "beats"]), "lofi beats");
+});
+
+Deno.test("getQuery - excludes --audio flag from query", () => {
+  assertEquals(getQuery(["--audio", "lofi", "beats"]), "lofi beats");
+  assertEquals(getQuery(["lofi", "beats", "--audio"]), "lofi beats");
+});
+
+// ─── getPlaybackMode ─────────────────────────────────────────────────────────
+
+Deno.test("getPlaybackMode - returns 'audiovisual' by default when no flags passed", () => {
+  assertEquals(getPlaybackMode([]), "audiovisual");
+  assertEquals(getPlaybackMode(["search", "query"]), "audiovisual");
+});
+
+Deno.test("getPlaybackMode - returns 'audio' when -a flag is passed", () => {
+  assertEquals(getPlaybackMode(["-a", "search", "query"]), "audio");
+  assertEquals(getPlaybackMode(["search", "query", "-a"]), "audio");
+});
+
+Deno.test("getPlaybackMode - returns 'audio' when --audio flag is passed", () => {
+  assertEquals(getPlaybackMode(["--audio", "search", "query"]), "audio");
+  assertEquals(getPlaybackMode(["search", "query", "--audio"]), "audio");
+});
+
+Deno.test("HELP_TEXT mentions -a and --audio flags", () => {
+  assertStringIncludes(HELP_TEXT, "-a");
+  assertStringIncludes(HELP_TEXT, "--audio");
+});
+
