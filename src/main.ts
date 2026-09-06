@@ -1,16 +1,16 @@
-import { getQuery, VERSION, HELP_TEXT } from "./cli/args.ts";
+import { getQuery, getPlaybackMode, VERSION, HELP_TEXT } from "./cli/args.ts";
 import { resolveStream, searchYoutube } from "./core/ytdlp.ts";
 import { pickFromList } from "./core/fzf.ts";
 import { playStream } from "./core/mpv.ts";
 import { runMaester } from "./core/maester.ts";
 import { isDirectTarget, normalizeDirectTarget } from "./core/direct_target.ts";
-import type { SearchResult, PickItem, ResolvedStream } from "./core/types.ts";
+import type { SearchResult, PickItem, ResolvedStream, PlaybackMode } from "./core/types.ts";
 
 export interface RavenRuntime {
   search?: (query: string, limit?: number) => Promise<SearchResult[]>;
   pick?: (items: PickItem[]) => Promise<number | null>;
   resolve?: (id: string) => Promise<ResolvedStream> | ResolvedStream;
-  play?: (stream: ResolvedStream, title?: string) => Promise<void>;
+  play?: (stream: ResolvedStream, title?: string, mode?: PlaybackMode) => Promise<void>;
   maester?: () => Promise<void>;
   log?: (message: string) => void;
   error?: (message: string) => void;
@@ -83,6 +83,7 @@ export async function runRaven(
 
   try {
     const query = getQuery(args);
+    const mode = getPlaybackMode(args);
     if (!query) {
       error("usage: raven <search query>");
       exit(1);
@@ -92,7 +93,7 @@ export async function runRaven(
     if (isDirectTarget(query)) {
       const stream: ResolvedStream = { videoUrl: normalizeDirectTarget(query) };
       log("Playing in mpv...");
-      await play(stream);
+      await play(stream, undefined, mode);
       return 0;
     }
 
@@ -120,7 +121,7 @@ export async function runRaven(
     const stream = await resolve(chosen.id);
 
     log("Playing in mpv...");
-    await play(stream, chosen.title);
+    await play(stream, chosen.title, mode);
     return 0;
   } catch (err) {
     error(err instanceof Error ? err.message : String(err));

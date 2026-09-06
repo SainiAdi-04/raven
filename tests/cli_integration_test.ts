@@ -3,7 +3,8 @@ import {
   assertStringIncludes,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { runRaven, type RavenRuntime } from "../src/main.ts";
-import type { SearchResult, ResolvedStream } from "../src/core/types.ts";
+import type { SearchResult, ResolvedStream, PlaybackMode } from "../src/core/types.ts";
+import { buildMpvArgs } from "../src/core/mpv.ts";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Application Orchestrator Seam Tests (runRaven)
@@ -14,10 +15,21 @@ import type { SearchResult, ResolvedStream } from "../src/core/types.ts";
 async function runTestRaven(
   args: string[],
   overrides: Partial<RavenRuntime> = {},
-): Promise<{ stdout: string; stderr: string; code: number }> {
+): Promise<{
+  stdout: string;
+  stderr: string;
+  code: number;
+  playedStream: ResolvedStream | null;
+  playedTitle?: string;
+  playedMode?: PlaybackMode;
+  playerArgs: string[];
+}> {
   const logs: string[] = [];
   const errors: string[] = [];
   let exitCode: number | null = null;
+  let playedStream: ResolvedStream | null = null;
+  let playedTitle: string | undefined;
+  let playedMode: PlaybackMode | undefined;
 
   const runtime: RavenRuntime = {
     log: (msg: string) => logs.push(msg),
@@ -28,7 +40,11 @@ async function runTestRaven(
     search: async () => [],
     pick: async () => null,
     resolve: () => ({ videoUrl: "https://youtube.com/watch?v=123" }),
-    play: async () => {},
+    play: async (stream: ResolvedStream, title?: string, mode?: PlaybackMode) => {
+      playedStream = stream;
+      playedTitle = title;
+      playedMode = mode;
+    },
     maester: async () => {
       logs.push("Checking external dependencies...");
       logs.push("  yt-dlp: installed");
@@ -43,6 +59,10 @@ async function runTestRaven(
     stdout: logs.join("\n"),
     stderr: errors.join("\n"),
     code: exitCode ?? code,
+    playedStream,
+    playedTitle,
+    playedMode,
+    playerArgs: playedStream ? buildMpvArgs(playedStream, playedTitle, playedMode) : [],
   };
 }
 
@@ -306,3 +326,98 @@ Deno.test("runRaven - non-URL string queries continue through search and picker"
   assertEquals(searchReceivedQuery, "never gonna give you up");
   assertStringIncludes(stdout, 'Searching for "never gonna give you up"...');
 });
+
+// ─── Audio Mode (-a / --audio) Support ───────────────────────────────────────
+
+Deno.test("runRaven - -a flag enables Audio Mode for search selection and sets pure audio mpv args", async () => {
+  const mockResults: SearchResult[] = [{ id: "audio1", title: "Lofi Hip Hop" }];
+  const { code, stdout, playedMode, playerArgs } = await runTestRaven(["-a", "lofi beats"], {
+    search: () => Promise.resolve(mockResults),
+    pick: () => Promise.resolve(0),
+    resolve: (id: string) => ({ videoUrl: `https://youtube.com/watch?v=${id}` }),
+  });
+
+  assertEquals(code, 0);
+  assertEquals(playedMode, "audio");
+  assertEquals(playerArgs.includes("--no-video"), true);
+  assertEquals(playerArgs.includes("--ytdl-format=bestaudio/best"), true);
+  assertEquals(playerArgs[0], "https://youtube.com/watch?v=audio1");
+  assertEquals(playerArgs[1], "--force-media-title=Lofi Hip Hop");
+  assertStringIncludes(stdout, "Playing in mpv...");
+});
+
+Deno.test("runRaven - --audio flag enables Audio Mode for search selection", async () => {
+  const mockResults: SearchResult[] = [{ id: "audio2", title: "Study Music" }];
+  const { code, playedMode, playerArgs } = await runTestRaven(["--audio", "study music"], {
+    search: () => Promise.resolve(mockResults),
+    pick: () => Promise.resolve(0),
+    resolve: (id: string) => ({ videoUrl: `https://youtube.com/watch?v=${id}` }),
+  });
+
+  assertEquals(code, 0);
+  assertEquals(playedMode, "audio");
+  assertEquals(playerArgs.includes("--no-video"), true);
+  assertEquals(playerArgs.includes("--ytdl-format=bestaudio/best"), true);
+});
+
+Deno.test("runRaven - -a flag combines cleanly with Direct Target URL", async () => {
+  let searchCalled = false;
+  let pickCalled = false;
+
+  const { code, stdout, playedStream, playedMode, playerArgs } = await runTestRaven(
+    ["-a", "https://youtu.be/dQw4w9WgXcQ"],
+    {
+      search: () => {
+        searchCalled = true;
+        throw new Error("search should not be called");
+      },
+      pick: () => {
+        pickCalled = true;
+        throw new Error("pick should not be called");
+      },
+    },
+  );
+
+  assertEquals(code, 0);
+  assertEquals(searchCalled, false);
+  assertEquals(pickCalled, false);
+  assertEquals(playedStream?.videoUrl, "https://youtu.be/dQw4w9WgXcQ");
+  assertEquals(playedMode, "audio");
+  assertEquals(playerArgs.includes("--no-video"), true);
+  assertEquals(playerArgs.includes("--ytdl-format=bestaudio/best"), true);
+  assertStringIncludes(stdout, "Playing in mpv...");
+});
+
+Deno.test("runRaven - --audio flag placed after Direct Target URL enables Audio Mode", async () => {
+  const { code, playedStream, playedMode, playerArgs } = await runTestRaven(
+    ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "--audio"],
+  );
+
+  assertEquals(code, 0);
+  assertEquals(playedStream?.videoUrl, "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  assertEquals(playedMode, "audio");
+  assertEquals(playerArgs.includes("--no-video"), true);
+  assertEquals(playerArgs.includes("--ytdl-format=bestaudio/best"), true);
+});
+
+Deno.test("runRaven - default Playback Mode without flags is Audiovisual Mode with video enabled", async () => {
+  const { code, playedStream, playedMode, playerArgs } = await runTestRaven(
+    ["https://youtu.be/dQw4w9WgXcQ"],
+  );
+
+  assertEquals(code, 0);
+  assertEquals(playedStream?.videoUrl, "https://youtu.be/dQw4w9WgXcQ");
+  assertEquals(playedMode, "audiovisual");
+  assertEquals(playerArgs.includes("--no-video"), false);
+  assertEquals(
+    playerArgs.includes("--ytdl-format=bestvideo[vcodec^=avc1]+bestaudio/bestvideo+bestaudio/best"),
+    true,
+  );
+});
+
+Deno.test("runRaven - Audio Mode flag alone without query shows usage error and exits 1", async () => {
+  const { code, stderr } = await runTestRaven(["-a"]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "usage:");
+});
+

@@ -4,6 +4,7 @@ import type {
   ResolvedStream,
   Format,
   PickItem,
+  PlaybackMode,
 } from "../src/core/types.ts";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -84,3 +85,13 @@ Deno.test("Format interface is defined in types.ts but unused in codebase", () =
   const _format: Format = { formatId: "test", label: "test" };
   assertEquals(typeof _format.formatId, "string");
 });
+
+// ─── PlaybackMode ────────────────────────────────────────────────────────────
+
+Deno.test("PlaybackMode - allows 'audiovisual' and 'audio' profiles", () => {
+  const mode1: PlaybackMode = "audiovisual";
+  const mode2: PlaybackMode = "audio";
+  assertEquals(mode1, "audiovisual");
+  assertEquals(mode2, "audio");
+});
+

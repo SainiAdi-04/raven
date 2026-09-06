@@ -1,5 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import type { ResolvedStream } from "../src/core/types.ts";
+import type { ResolvedStream, PlaybackMode } from "../src/core/types.ts";
+import { buildMpvArgs as buildPlayerArgs } from "../src/core/mpv.ts";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // mpv.ts - playStream argument construction tests
@@ -97,3 +98,53 @@ Deno.test("mpv - video URL is always the first argument", () => {
   const args = buildMpvArgs(stream, "Test");
   assertEquals(args[0], "https://my-stream.example.com/v/1234");
 });
+
+// ─── Core buildMpvArgs (Audiovisual & Audio Modes) ───────────────────────────
+
+Deno.test("buildPlayerArgs - Audiovisual Mode sets default ytdl-format and omits --no-video", () => {
+  const stream: ResolvedStream = { videoUrl: "https://youtube.com/watch?v=123" };
+  const args = buildPlayerArgs(stream, "Test Video", "audiovisual");
+  assertEquals(args, [
+    "https://youtube.com/watch?v=123",
+    "--force-media-title=Test Video",
+    "--msg-level=all=warn",
+    "--ytdl-format=bestvideo[vcodec^=avc1]+bestaudio/bestvideo+bestaudio/best",
+  ]);
+  assertEquals(args.includes("--no-video"), false);
+});
+
+Deno.test("buildPlayerArgs - defaults to Audiovisual Mode when mode is omitted", () => {
+  const stream: ResolvedStream = { videoUrl: "https://youtube.com/watch?v=123" };
+  const args = buildPlayerArgs(stream, "Test Video");
+  assertEquals(args, [
+    "https://youtube.com/watch?v=123",
+    "--force-media-title=Test Video",
+    "--msg-level=all=warn",
+    "--ytdl-format=bestvideo[vcodec^=avc1]+bestaudio/bestvideo+bestaudio/best",
+  ]);
+  assertEquals(args.includes("--no-video"), false);
+});
+
+Deno.test("buildPlayerArgs - Audio Mode sets --no-video and pure audio format", () => {
+  const stream: ResolvedStream = { videoUrl: "https://youtube.com/watch?v=123" };
+  const args = buildPlayerArgs(stream, "Test Video", "audio");
+  assertEquals(args, [
+    "https://youtube.com/watch?v=123",
+    "--force-media-title=Test Video",
+    "--msg-level=all=warn",
+    "--no-video",
+    "--ytdl-format=bestaudio/best",
+  ]);
+  assertEquals(args.includes("--no-video"), true);
+  assertEquals(args.includes("--ytdl-format=bestaudio/best"), true);
+});
+
+Deno.test("buildPlayerArgs - Audio Mode defaults to 'Now playing' when title is undefined", () => {
+  const stream: ResolvedStream = { videoUrl: "https://youtube.com/watch?v=123" };
+  const args = buildPlayerArgs(stream, undefined, "audio");
+  assertEquals(args[0], "https://youtube.com/watch?v=123");
+  assertEquals(args[1], "--force-media-title=Now playing");
+  assertEquals(args.includes("--no-video"), true);
+  assertEquals(args.includes("--ytdl-format=bestaudio/best"), true);
+});
+

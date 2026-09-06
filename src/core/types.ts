@@ -21,3 +21,6 @@ export interface PickItem {
   display: string;
   preview?: string;
 }
+
+export type PlaybackMode = "audiovisual" | "audio";
+

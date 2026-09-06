@@ -1,15 +1,32 @@
-import type { ResolvedStream } from "./types.ts";
+import type { ResolvedStream, PlaybackMode } from "./types.ts";
 
-export async function playStream(
+export function buildMpvArgs(
   stream: ResolvedStream,
   title?: string,
-): Promise<void> {
+  mode: PlaybackMode = "audiovisual",
+): string[] {
   const args = [
     stream.videoUrl,
     `--force-media-title=${title ?? "Now playing"}`,
     "--msg-level=all=warn",
-    "--ytdl-format=bestvideo[vcodec^=avc1]+bestaudio/bestvideo+bestaudio/best",
   ];
+
+  if (mode === "audio") {
+    args.push("--no-video");
+    args.push("--ytdl-format=bestaudio/best");
+  } else {
+    args.push("--ytdl-format=bestvideo[vcodec^=avc1]+bestaudio/bestvideo+bestaudio/best");
+  }
+
+  return args;
+}
+
+export async function playStream(
+  stream: ResolvedStream,
+  title?: string,
+  mode: PlaybackMode = "audiovisual",
+): Promise<void> {
+  const args = buildMpvArgs(stream, title, mode);
 
   const cmd = new Deno.Command("mpv", {
     args,
