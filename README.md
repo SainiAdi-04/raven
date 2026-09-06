@@ -126,6 +126,8 @@ raven <search query>
 
 | Flag | Description |
 |------|-------------|
+| `-a, --audio` | Enable Audio Mode (suppress video) |
+| `-n, --limit <count>` | Maximum number of search results (default: 10) |
 | `-h, --help` | Show help message and exit |
 | `-v, --version` | Show version number and exit |
 

@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "dev": "deno run --allow-run=yt-dlp,fzf,mpv src/main.ts",
-    "compile": "deno compile --allow-run=yt-dlp,fzf,mpv -o raven src/main.ts"
+    "dev": "deno run --allow-run=yt-dlp,fzf,mpv --allow-net=www.youtube.com src/main.ts",
+    "compile": "deno compile --allow-run=yt-dlp,fzf,mpv --allow-net=www.youtube.com -o raven src/main.ts"
   },
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.0"

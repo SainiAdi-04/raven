@@ -1,5 +1,6 @@
-import { getQuery, getPlaybackMode, VERSION, HELP_TEXT } from "./cli/args.ts";
-import { resolveStream, searchYoutube } from "./core/ytdlp.ts";
+import { getQuery, getPlaybackMode, getLimit, VERSION, HELP_TEXT } from "./cli/args.ts";
+import { resolveStream } from "./core/ytdlp.ts";
+import { searchHybrid } from "./core/search.ts";
 import { pickFromList } from "./core/fzf.ts";
 import { playStream } from "./core/mpv.ts";
 import { runMaester } from "./core/maester.ts";
@@ -57,7 +58,7 @@ export async function runRaven(
   const log = runtime.log ?? console.log;
   const error = runtime.error ?? console.error;
   const exit = runtime.exit ?? ((code: number) => Deno.exit(code));
-  const search = runtime.search ?? searchYoutube;
+  const search = runtime.search ?? ((query: string, limit?: number) => searchHybrid(query, limit, error));
   const pick = runtime.pick ?? pickFromList;
   const resolve = runtime.resolve ?? resolveStream;
   const play = runtime.play ?? playStream;
@@ -84,6 +85,7 @@ export async function runRaven(
   try {
     const query = getQuery(args);
     const mode = getPlaybackMode(args);
+    const limit = getLimit(args);
     if (!query) {
       error("usage: raven <search query>");
       exit(1);
@@ -98,7 +100,7 @@ export async function runRaven(
     }
 
     log(`Searching for "${query}"...`);
-    const results = await search(query);
+    const results = await search(query, limit);
 
     if (results.length === 0) {
       log("No results found.");
