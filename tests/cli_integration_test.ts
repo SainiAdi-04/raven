@@ -421,3 +421,97 @@ Deno.test("runRaven - Audio Mode flag alone without query shows usage error and 
   assertStringIncludes(stderr, "usage:");
 });
 
+// ─── Search Result Limit (-n / --limit) & Hybrid Search ─────────────────────
+
+Deno.test("runRaven - passes default limit 10 to search runtime", async () => {
+  let capturedQuery = "";
+  let capturedLimit: number | undefined;
+
+  await runTestRaven(["lofi beats"], {
+    search: (query, limit) => {
+      capturedQuery = query;
+      capturedLimit = limit;
+      return Promise.resolve([]);
+    },
+  });
+
+  assertEquals(capturedQuery, "lofi beats");
+  assertEquals(capturedLimit, 10);
+});
+
+Deno.test("runRaven - -n flag passes configured limit to search runtime", async () => {
+  let capturedQuery = "";
+  let capturedLimit: number | undefined;
+
+  await runTestRaven(["-n", "5", "lofi beats"], {
+    search: (query, limit) => {
+      capturedQuery = query;
+      capturedLimit = limit;
+      return Promise.resolve([]);
+    },
+  });
+
+  assertEquals(capturedQuery, "lofi beats");
+  assertEquals(capturedLimit, 5);
+});
+
+Deno.test("runRaven - --limit flag passes configured limit to search runtime", async () => {
+  let capturedQuery = "";
+  let capturedLimit: number | undefined;
+
+  await runTestRaven(["--limit", "25", "ambient music"], {
+    search: (query, limit) => {
+      capturedQuery = query;
+      capturedLimit = limit;
+      return Promise.resolve([]);
+    },
+  });
+
+  assertEquals(capturedQuery, "ambient music");
+  assertEquals(capturedLimit, 25);
+});
+
+Deno.test("runRaven - limit flag alone without query shows usage error and exits 1", async () => {
+  const { code, stderr } = await runTestRaven(["-n", "10"]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "usage:");
+});
+
+Deno.test("runRaven - hybrid search fallback emits notice to stderr and executes fallback", async () => {
+  let fallbackExecuted = false;
+  const mockFallbackResults: SearchResult[] = [
+    { id: "fb1", title: "Fallback Result" },
+  ];
+
+  const logs: string[] = [];
+  const errors: string[] = [];
+  let exitCode: number | null = null;
+  let playedStream: ResolvedStream | null = null;
+
+  const runtime: RavenRuntime = {
+    log: (msg: string) => logs.push(msg),
+    error: (msg: string) => errors.push(msg),
+    exit: (code: number) => {
+      exitCode = code;
+    },
+    search: (_q, _lim) => {
+      errors.push("(notice: falling back to yt-dlp search...)");
+      fallbackExecuted = true;
+      return Promise.resolve(mockFallbackResults);
+    },
+    pick: () => Promise.resolve(0),
+    resolve: (id) => ({ videoUrl: `https://youtube.com/watch?v=${id}` }),
+    play: (stream) => {
+      playedStream = stream;
+      return Promise.resolve();
+    },
+  };
+
+  const code = await runRaven(["chill music"], runtime);
+  assertEquals(exitCode ?? code, 0);
+  assertEquals(fallbackExecuted, true);
+  assertEquals(errors.includes("(notice: falling back to yt-dlp search...)"), true);
+  assertEquals((playedStream as ResolvedStream | null)?.videoUrl, "https://youtube.com/watch?v=fb1");
+});
+
+

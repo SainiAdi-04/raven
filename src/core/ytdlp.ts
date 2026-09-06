@@ -3,10 +3,10 @@ import { formatYtDlpError } from "./error.ts";
 
 export async function searchYoutube(
   query: string,
-  limit = 5,
+  limit = 10,
 ): Promise<SearchResult[]> {
   const cmd = new Deno.Command("yt-dlp", {
-    args: [`ytsearch${limit}:${query}`, "--dump-json", ], //"--flat-playlist"
+    args: [`ytsearch${limit}:${query}`, "--dump-json", "--flat-playlist"],
     stdin: "null",
     stdout: "piped",
     stderr: "piped",

@@ -170,16 +170,16 @@ Deno.test("resolveStream - BUG: videoId with special characters is not URL-encod
 
 Deno.test("searchYoutube - constructs correct search arg with default limit", () => {
   const query = "test video";
-  const limit = 5;
+  const limit = 10;
   const searchArg = `ytsearch${limit}:${query}`;
-  assertEquals(searchArg, "ytsearch5:test video");
+  assertEquals(searchArg, "ytsearch10:test video");
 });
 
 Deno.test("searchYoutube - constructs correct search arg with custom limit", () => {
   const query = "test video";
-  const limit = 10;
+  const limit = 25;
   const searchArg = `ytsearch${limit}:${query}`;
-  assertEquals(searchArg, "ytsearch10:test video");
+  assertEquals(searchArg, "ytsearch25:test video");
 });
 
 Deno.test("searchYoutube - BUG: empty query creates 'ytsearch5:' arg", () => {
