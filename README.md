@@ -215,18 +215,6 @@ Raven employs a two-tier search architecture:
 
 ---
 
-## Roadmap
-
-Planned enhancements for future releases:
-
-- Windows platform support
-- Configurable media player backends beyond `mpv`
-- Offline playlist and queue management
-- Playback resume support
-- Stream quality and format selection
-
----
-
 ## Contributing
 
 Contributions, issues, and feature requests are welcome. Feel free to check the [Issues page](../../issues).
