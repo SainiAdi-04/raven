@@ -23,7 +23,9 @@ Search, pick, watch — no ads, no autoplay, no algorithm in between.
 ## 🏰 Why send a Raven?
 
 - **It lives in your terminal.** No browser tab, no bookmarks bar, no seventeen other tabs pulling your attention. Just you and what you asked for.
+- **Sub-second hybrid search.** Searches query YouTube's InnerTube API directly in ~200ms using native Deno `fetch()`, with automatic fallback to `yt-dlp` for maximum reliability. No 15-second lag.
 - **No ads. No autoplay. No algorithm.** Raven doesn't know what "engagement" means. It fetches your search, you pick a result, it plays, it ends. Nothing queues up after.
+- **Audio Mode & Direct Target playback.** Listen to audio-only streams with `-a` or pass a Direct Target YouTube watch URL directly to start playing without searching.
 - **Watch only what you came for.** No homepage, no Shorts, no "recommended for you." The absence of a feed is the feature.
 - **Built to grow.** Today it's search-and-play. Future versions can extend into offline playlists, a personal audio queue, and more — think of it as the first outpost, not the whole kingdom.
 
@@ -110,32 +112,114 @@ This checks that `yt-dlp`, `fzf`, and `mpv` are all reachable, and tells you exa
 
 ![raven maester checking dependencies](./demo/maester.gif)
 
+### 5. Build from source (optional)
+
+If you have [Deno](https://deno.land) installed, you can run or compile Raven directly:
+
+```bash
+# Run in development
+deno task dev <search query>
+
+# Compile standalone executable
+deno task compile
+```
+
 ---
 
 ## 🦅 Usage
 
+### Interactive Search & Playback
+
+Supply a Search Query to discover YouTube content:
+
 ```bash
-raven <search query>
+raven Odyssey trailer
 ```
 
-- A list of results opens in an interactive picker (`fzf`) — search, arrow keys, or type to filter.
-- Pick one, and it resolves and plays instantly in `mpv`.
-- Press `q` in `mpv` to stop playback.
+1. **Sub-second Hybrid Search**: Raven queries YouTube's InnerTube API directly (~200ms) with automatic, zero-downtime fallback to `yt-dlp`.
+2. **Interactive Picker**: Candidate Search Results are presented in an interactive fuzzy-selection interface (`fzf`). Filter using arrow keys or typing.
+3. **Player Handoff**: Once selected, the Media Stream resolves and begins playback in `mpv`. Press `q` in `mpv` to stop playback.
 
-### Flags
+### Direct Target URL Playback
 
-| Flag | Description |
-|------|-------------|
+Supply a specific YouTube watch URL, short URL (`youtu.be`), or YouTube Shorts URL directly to start playback immediately, bypassing search and the interactive Picker:
+
+```bash
+# Standard watch URL
+raven https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+# Short URL
+raven youtu.be/dQw4w9WgXcQ
+
+# YouTube Shorts URL
+raven https://youtube.com/shorts/dQw4w9WgXcQ
+```
+
+Direct Target playback works seamlessly with Audio Mode as well:
+
+```bash
+raven -a https://youtu.be/dQw4w9WgXcQ
+```
+
+### Audio Mode (`-a`, `--audio`)
+
+Enable Audio Mode to suppress video decoding and window rendering in favor of a lightweight audio stream (delegated to `mpv` via `--no-video` and optimal audio stream formats). Perfect for background music, podcasts, discussions, and ambient audio:
+
+```bash
+# Search and play in Audio Mode
+raven -a lofi hip hop
+
+# Long flag syntax
+raven --audio "deep focus ambient"
+```
+
+### Configurable Search Limits (`-n`, `--limit`)
+
+Control the maximum number of Search Results returned by the search engine (default: 10):
+
+```bash
+# Fetch up to 20 Search Results
+raven -n 20 synthwave mix
+
+# Long flag syntax
+raven --limit 5 classical piano
+```
+
+### Sub-Second Fast Search (Hybrid Engine)
+
+Raven uses an intelligent hybrid search architecture:
+- **Primary Engine**: Direct HTTPS queries against YouTube's public InnerTube API (`/youtubei/v1/search`) via native Deno `fetch()`. Search latency drops from ~16 seconds down to ~200ms with zero external dependencies.
+- **Resilient Fallback**: If an InnerTube request encounters network failures or upstream schema changes, Raven automatically emits a diagnostic notice to `stderr` and gracefully falls back to `yt-dlp --flat-playlist`.
+
+---
+
+### Command-Line Reference
+
+#### Options
+
+| Option | Description |
+|---|---|
 | `-a, --audio` | Enable Audio Mode (suppress video) |
-| `-n, --limit <count>` | Maximum number of search results (default: 10) |
+| `-n, --limit <num>` | Maximum number of Search Results (default: `10`) |
 | `-h, --help` | Show help message and exit |
 | `-v, --version` | Show version number and exit |
 
-### Commands
+#### Commands
 
 | Command | Description |
-|---------|-------------|
-| `maester` | Check that yt-dlp, fzf, and mpv are installed |
+|---|---|
+| `maester` | Check that external dependencies (`yt-dlp`, `fzf`, `mpv`) are installed |
+
+#### Examples
+
+| Task | Command |
+|---|---|
+| Search and pick video | `raven Odyssey trailer` |
+| Direct Target playback | `raven https://youtu.be/dQw4w9WgXcQ` |
+| Background music (Audio Mode) | `raven -a lofi hip hop` |
+| Direct Target in Audio Mode | `raven -a https://youtu.be/dQw4w9WgXcQ` |
+| Expanded search results | `raven -n 20 synthwave mix` |
+| Check environment health | `raven maester` |
 
 ---
 

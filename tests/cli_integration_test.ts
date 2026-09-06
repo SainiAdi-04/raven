@@ -514,4 +514,77 @@ Deno.test("runRaven - hybrid search fallback emits notice to stderr and executes
   assertEquals((playedStream as ResolvedStream | null)?.videoUrl, "https://youtube.com/watch?v=fb1");
 });
 
+// ─── Subprocess CLI Integration Tests ────────────────────────────────────────
+
+async function runCliSubprocessOrSeam(
+  args: string[],
+): Promise<{ stdout: string; stderr: string; code: number }> {
+  const perm = await Deno.permissions.query({ name: "run", command: Deno.execPath() });
+  if (perm.state === "granted") {
+    const cmd = new Deno.Command(Deno.execPath(), {
+      args: ["run", "--allow-run=yt-dlp,fzf,mpv", "--allow-net=www.youtube.com", "src/main.ts", ...args],
+      stdout: "piped",
+      stderr: "piped",
+    });
+    const output = await cmd.output();
+    return {
+      stdout: new TextDecoder().decode(output.stdout),
+      stderr: new TextDecoder().decode(output.stderr),
+      code: output.code,
+    };
+  }
+  const result = await runTestRaven(args);
+  return { stdout: result.stdout, stderr: result.stderr, code: result.code };
+}
+
+Deno.test("CLI subprocess - --help outputs full help text with all options and examples and exits 0", async () => {
+  const { stdout, code } = await runCliSubprocessOrSeam(["--help"]);
+  assertEquals(code, 0);
+  assertStringIncludes(stdout, "Raven — A terminal-native YouTube client");
+  assertStringIncludes(stdout, "sub-second hybrid search");
+  assertStringIncludes(stdout, "-a, --audio");
+  assertStringIncludes(stdout, "-n, --limit <num>");
+  assertStringIncludes(stdout, "raven https://youtu.be/dQw4w9WgXcQ");
+  assertStringIncludes(stdout, "raven -a https://youtu.be/dQw4w9WgXcQ");
+});
+
+Deno.test("CLI subprocess - --version outputs version and exits 0", async () => {
+  const { stdout, code } = await runCliSubprocessOrSeam(["--version"]);
+  assertEquals(code, 0);
+  assertStringIncludes(stdout, "raven v");
+});
+
+Deno.test("CLI subprocess - missing query outputs usage error to stderr and exits 1", async () => {
+  const { stderr, code } = await runCliSubprocessOrSeam([]);
+  assertEquals(code, 1);
+  assertStringIncludes(stderr, "usage: raven [options] <search query | direct target>");
+});
+
+Deno.test("CLI compiled binary - --help outputs help text when binary is present and run permission granted", async () => {
+  try {
+    const stat = await Deno.stat("./raven");
+    if (!stat.isFile) return;
+  } catch {
+    return;
+  }
+
+  const perm = await Deno.permissions.query({ name: "run", command: "./raven" });
+  if (perm.state !== "granted") return;
+
+  const cmd = new Deno.Command("./raven", {
+    args: ["--help"],
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const output = await cmd.output();
+  const stdout = new TextDecoder().decode(output.stdout);
+  assertEquals(output.code, 0);
+  assertStringIncludes(stdout, "Raven — A terminal-native YouTube client");
+  assertStringIncludes(stdout, "sub-second hybrid search");
+  assertStringIncludes(stdout, "-a, --audio");
+  assertStringIncludes(stdout, "-n, --limit <num>");
+});
+
+
+
 

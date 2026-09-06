@@ -87,7 +87,7 @@ export async function runRaven(
     const mode = getPlaybackMode(args);
     const limit = getLimit(args);
     if (!query) {
-      error("usage: raven <search query>");
+      error("usage: raven [options] <search query | direct target>");
       exit(1);
       return 1;
     }

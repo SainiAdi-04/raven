@@ -122,6 +122,24 @@ Deno.test("HELP_TEXT mentions -n and --limit flags", () => {
   assertStringIncludes(HELP_TEXT, "--limit");
 });
 
+Deno.test("HELP_TEXT documents direct target in USAGE", () => {
+  assertStringIncludes(HELP_TEXT, "<search query | direct target>");
+});
+
+Deno.test("HELP_TEXT documents direct URL usage examples", () => {
+  assertStringIncludes(HELP_TEXT, "raven https://youtu.be/dQw4w9WgXcQ");
+  assertStringIncludes(HELP_TEXT, "raven -a https://youtu.be/dQw4w9WgXcQ");
+});
+
+Deno.test("HELP_TEXT documents Audio Mode and search limit usage examples", () => {
+  assertStringIncludes(HELP_TEXT, "raven -a lofi hip hop");
+  assertStringIncludes(HELP_TEXT, "raven -n 20 synthwave mix");
+});
+
+Deno.test("HELP_TEXT mentions sub-second hybrid search", () => {
+  assertStringIncludes(HELP_TEXT, "sub-second hybrid search");
+});
+
 // ─── getQuery with limit flags ──────────────────────────────────────────────
 
 Deno.test("getQuery - excludes -n and its argument from query", () => {
