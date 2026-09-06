@@ -3,6 +3,7 @@ import { resolveStream, searchYoutube } from "./core/ytdlp.ts";
 import { pickFromList } from "./core/fzf.ts";
 import { playStream } from "./core/mpv.ts";
 import { runMaester } from "./core/maester.ts";
+import { isDirectTarget, normalizeDirectTarget } from "./core/direct_target.ts";
 import type { SearchResult, PickItem, ResolvedStream } from "./core/types.ts";
 
 export interface RavenRuntime {
@@ -86,6 +87,13 @@ export async function runRaven(
       error("usage: raven <search query>");
       exit(1);
       return 1;
+    }
+
+    if (isDirectTarget(query)) {
+      const stream: ResolvedStream = { videoUrl: normalizeDirectTarget(query) };
+      log("Playing in mpv...");
+      await play(stream);
+      return 0;
     }
 
     log(`Searching for "${query}"...`);

@@ -6,7 +6,7 @@ export const HELP_TEXT = [
   "Raven — A terminal-native YouTube client",
   "",
   "USAGE:",
-  "  raven <search query>",
+  "  raven <search query | direct target>",
   "  raven maester",
   "  raven --help",
   "  raven --version",
@@ -20,6 +20,7 @@ export const HELP_TEXT = [
   "",
   "EXAMPLES:",
   "  raven Odyssey trailer",
+  "  raven https://youtu.be/dQw4w9WgXcQ",
   "  raven maester",
 ].join("\n");
 
