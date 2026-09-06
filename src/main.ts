@@ -3,25 +3,20 @@ import { resolveStream, searchYoutube } from "./core/ytdlp.ts";
 import { pickFromList } from "./core/fzf.ts";
 import { playStream } from "./core/mpv.ts";
 import { runMaester } from "./core/maester.ts";
+import type { SearchResult, PickItem, ResolvedStream } from "./core/types.ts";
 
-const args = Deno.args;
-
-if (args.includes("--help") || args.includes("-h")) {
-  console.log(HELP_TEXT);
-  Deno.exit(0);
+export interface RavenRuntime {
+  search?: (query: string, limit?: number) => Promise<SearchResult[]>;
+  pick?: (items: PickItem[]) => Promise<number | null>;
+  resolve?: (id: string) => Promise<ResolvedStream> | ResolvedStream;
+  play?: (stream: ResolvedStream, title?: string) => Promise<void>;
+  maester?: () => Promise<void>;
+  log?: (message: string) => void;
+  error?: (message: string) => void;
+  exit?: (code: number) => void;
 }
 
-if (args.includes("--version") || args.includes("-v")) {
-  console.log(VERSION);
-  Deno.exit(0);
-}
-
-if (args.length > 0 && args[0] === "maester") {
-  await runMaester();
-  Deno.exit(0);
-}
-
-function formatDuration(seconds?: number): string {
+export function formatDuration(seconds?: number): string {
   if (!seconds) return "unknown length";
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
@@ -34,29 +29,15 @@ function formatDuration(seconds?: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function formatViews(count?: number): string {
+export function formatViews(count?: number): string {
   if (!count) return "";
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M views`;
-  if (count >= 1_000) return `${(count / 1_000).toFixed(0)}K views`;
+  if (Math.abs(count) >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M views`;
+  if (Math.abs(count) >= 1_000) return `${(count / 1_000).toFixed(0)}K views`;
   return `${count} views`;
 }
 
-try {
-  const query = getQuery();
-  if (!query) {
-    console.error("usage: raven <search query>");
-    Deno.exit(1);
-  }
-
-  console.log(`Searching for "${query}"...`);
-  const results = await searchYoutube(query);
-
-  if (results.length === 0) {
-    console.log("No results found.");
-    Deno.exit(0);
-  }
-
-  const pickItems = results.map((r) => ({
+export function buildPickItems(results: SearchResult[]): PickItem[] {
+  return results.map((r) => ({
     display: r.title,
     preview: [
       r.title,
@@ -66,22 +47,80 @@ try {
       r.date ? `Released on: ${r.date}` : "",
     ].join("\n"),
   }));
+}
 
-  const pickedIndex = await pickFromList(pickItems);
+export async function runRaven(
+  args: string[] = Deno.args,
+  runtime: RavenRuntime = {},
+): Promise<number> {
+  const log = runtime.log ?? console.log;
+  const error = runtime.error ?? console.error;
+  const exit = runtime.exit ?? ((code: number) => Deno.exit(code));
+  const search = runtime.search ?? searchYoutube;
+  const pick = runtime.pick ?? pickFromList;
+  const resolve = runtime.resolve ?? resolveStream;
+  const play = runtime.play ?? playStream;
+  const maester = runtime.maester ?? runMaester;
 
-  if (pickedIndex === null) {
-    console.log("Cancelled.");
-    Deno.exit(0);
+  if (args.includes("--help") || args.includes("-h")) {
+    log(HELP_TEXT);
+    exit(0);
+    return 0;
   }
 
-  const chosen = results[pickedIndex];
+  if (args.includes("--version") || args.includes("-v")) {
+    log(VERSION);
+    exit(0);
+    return 0;
+  }
 
-  console.log(`Resolving stream for "${chosen.title}"...`);
-  const stream = resolveStream(chosen.id);
+  if (args.length > 0 && args[0] === "maester") {
+    await maester();
+    exit(0);
+    return 0;
+  }
 
-  console.log("Playing in mpv...");
-  await playStream(stream, chosen.title);
-} catch (error) {
-  console.error(error instanceof Error ? error.message : String(error));
-  Deno.exit(1);
+  try {
+    const query = getQuery(args);
+    if (!query) {
+      error("usage: raven <search query>");
+      exit(1);
+      return 1;
+    }
+
+    log(`Searching for "${query}"...`);
+    const results = await search(query);
+
+    if (results.length === 0) {
+      log("No results found.");
+      exit(0);
+      return 0;
+    }
+
+    const pickItems = buildPickItems(results);
+    const pickedIndex = await pick(pickItems);
+
+    if (pickedIndex === null) {
+      log("Cancelled.");
+      exit(0);
+      return 0;
+    }
+
+    const chosen = results[pickedIndex];
+
+    log(`Resolving stream for "${chosen.title}"...`);
+    const stream = await resolve(chosen.id);
+
+    log("Playing in mpv...");
+    await play(stream, chosen.title);
+    return 0;
+  } catch (err) {
+    error(err instanceof Error ? err.message : String(err));
+    exit(1);
+    return 1;
+  }
+}
+
+if (import.meta.main) {
+  await runRaven(Deno.args);
 }

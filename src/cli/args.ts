@@ -23,8 +23,8 @@ export const HELP_TEXT = [
   "  raven maester",
 ].join("\n");
 
-export function getQuery(): string {
-  const args = parseArgs(Deno.args, {
+export function getQuery(rawArgs: string[] = Deno.args): string {
+  const args = parseArgs(rawArgs, {
     boolean: ["help", "version"],
     alias: { h: "help", v: "version" },
   });

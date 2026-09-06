@@ -1,21 +1,22 @@
 import type { PickItem } from "./types.ts";
 
-export async function pickFromList(items: PickItem[]): Promise<number | null> {
-  const hasPreview = items.some((i) => i.preview);
-  let tempDir: string | undefined;
-  const lines: string[] = [];
+export function formatPreviewForFzf(preview?: string): string {
+  if (!preview) return "";
+  return preview
+    .replaceAll("\\", "\\\\")
+    .replaceAll("\r\n", "\\n")
+    .replaceAll("\n", "\\n")
+    .replaceAll("\t", "\\t");
+}
 
+export function buildFzfLines(items: PickItem[], hasPreview: boolean): string[] {
   if (hasPreview) {
-    tempDir = await Deno.makeTempDir({ prefix: "raven-preview-" });
-    for (let i = 0; i < items.length; i++) {
-      const filePath = `${tempDir}/${i}.txt`;
-      await Deno.writeTextFile(filePath, items[i].preview ?? "");
-      lines.push(`${items[i].display}\t${filePath}`);
-    }
-  } else {
-    lines.push(...items.map((i) => i.display));
+    return items.map((item) => `${item.display}\t${formatPreviewForFzf(item.preview)}`);
   }
+  return items.map((item) => item.display);
+}
 
+export function buildFzfArgs(hasPreview: boolean): string[] {
   const args = [
     "--height=90%",
     "--layout=reverse",
@@ -31,10 +32,18 @@ export async function pickFromList(items: PickItem[]): Promise<number | null> {
     args.push(
       "--delimiter=\t",
       "--with-nth=1",
-      "--preview=cat {2}",
+      `--preview=printf '%b\\n' "{2}"`,
       "--preview-window=right:45%:wrap",
     );
   }
+
+  return args;
+}
+
+export async function pickFromList(items: PickItem[]): Promise<number | null> {
+  const hasPreview = items.some((i) => i.preview);
+  const lines = buildFzfLines(items, hasPreview);
+  const args = buildFzfArgs(hasPreview);
 
   const cmd = new Deno.Command("fzf", {
     args,
@@ -43,13 +52,10 @@ export async function pickFromList(items: PickItem[]): Promise<number | null> {
     stderr: "inherit",
   });
 
-  let result;
+  let child;
   try {
-    result = cmd.spawn();
+    child = cmd.spawn();
   } catch (error) {
-    if (tempDir) {
-      await Deno.remove(tempDir, { recursive: true }).catch(() => {});
-    }
     if (error instanceof Deno.errors.NotFound) {
       throw new Error(
         "fzf is not installed or could not be found in your PATH. Please install fzf and ensure it is available in your PATH. Installation guide: https://github.com/junegunn/fzf#installation",
@@ -59,16 +65,12 @@ export async function pickFromList(items: PickItem[]): Promise<number | null> {
     throw error;
   }
 
-  const child = result;
-
   const writer = child.stdin.getWriter();
   await writer.write(new TextEncoder().encode(lines.join("\n")));
   await writer.close();
 
   const { stdout, code } = await child.output();
   const pickedLine = new TextDecoder().decode(stdout).trim();
-
-  if (tempDir) await Deno.remove(tempDir, { recursive: true }).catch(() => {});
 
   if (code !== 0 || pickedLine === "") return null;
 
